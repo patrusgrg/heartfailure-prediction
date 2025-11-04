@@ -38,10 +38,28 @@ def train_model(df, models_dir=None):
 
 
 if __name__ == '__main__':
-    # simple CLI to run training: expects the dataset at ../data/heart_failure_clinical_records_dataset.csv
+    # simple CLI to run training: locate repository root relative to this file and find data/
     from preprocess import preprocess_data
-    data_file = os.path.join(os.getcwd(), '..', 'data', 'heart_failure_clinical_records_dataset.csv')
-    data_file = os.path.abspath(data_file)
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    data_dir = os.path.join(repo_root, 'data')
+    # prefer original filename but fall back to common alternatives
+    candidates = [
+        os.path.join(data_dir, 'heart_failure_clinical_records_dataset.csv'),
+        os.path.join(data_dir, 'heart.csv'),
+    ]
+    data_file = None
+    for c in candidates:
+        if os.path.exists(c):
+            data_file = c
+            break
+    if data_file is None:
+        import glob
+        files = glob.glob(os.path.join(data_dir, '*.csv'))
+        if files:
+            data_file = files[0]
+    if data_file is None:
+        raise FileNotFoundError(f'No CSV data file found in {data_dir} (expected one of: {candidates})')
+
     print('Loading data from', data_file)
     df = preprocess_data(data_file)
     print('Training model on', df.shape)
