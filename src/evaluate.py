@@ -13,8 +13,25 @@ def evaluate_model(df, models_dir=None):
     model = joblib.load(model_path)
     scaler = joblib.load(scaler_path)
 
-    X = df.drop('DEATH_EVENT', axis=1)
-    y = df['DEATH_EVENT']
+    # detect target column
+    possible_targets = ['DEATH_EVENT', 'HeartDisease', 'target', 'Outcome', 'DEATH']
+    target_col = None
+    for t in possible_targets:
+        if t in df.columns:
+            target_col = t
+            break
+    if target_col is None:
+        raise KeyError(f"No target column found. Tried: {possible_targets}")
+
+    X = df.drop(target_col, axis=1)
+    y = df[target_col]
+
+    # align features to training columns
+    feature_path = os.path.join(models_dir, 'feature_columns.pkl')
+    if os.path.exists(feature_path):
+        feature_columns = joblib.load(feature_path)
+        X = pd.get_dummies(X)
+        X = X.reindex(columns=feature_columns, fill_value=0)
 
     X_scaled = scaler.transform(X)
     y_pred = model.predict(X_scaled)

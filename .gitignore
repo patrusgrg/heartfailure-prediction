@@ -1,0 +1,16 @@
+# Virtual environment
+venv310/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Editor directories
+.vscode/
+
+# Model artifacts
+models/
+
+# Data
+data/*.csv

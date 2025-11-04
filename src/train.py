@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
@@ -16,8 +17,21 @@ def train_model(df, models_dir=None):
 
     os.makedirs(models_dir, exist_ok=True)
 
-    X = df.drop('DEATH_EVENT', axis=1)
-    y = df['DEATH_EVENT']
+    # detect target column from a list of common names
+    possible_targets = ['DEATH_EVENT', 'HeartDisease', 'target', 'Outcome', 'DEATH']
+    target_col = None
+    for t in possible_targets:
+        if t in df.columns:
+            target_col = t
+            break
+    if target_col is None:
+        raise KeyError(f"No target column found. Tried: {possible_targets}")
+
+    X = df.drop(target_col, axis=1)
+    y = df[target_col]
+
+    # One-hot encode categorical variables so scaler receives numeric data
+    X = pd.get_dummies(X)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -33,7 +47,12 @@ def train_model(df, models_dir=None):
 
     joblib.dump(model, model_path)
     joblib.dump(scaler, scaler_path)
+    # Save feature columns used for training so prediction can align features.
+    feature_path = os.path.join(models_dir, 'feature_columns.pkl')
+    joblib.dump(X.columns.tolist(), feature_path)
 
+    return model_path, scaler_path, feature_path
+    
     return model_path, scaler_path
 
 
@@ -63,5 +82,6 @@ if __name__ == '__main__':
     print('Loading data from', data_file)
     df = preprocess_data(data_file)
     print('Training model on', df.shape)
-    mp, sp = train_model(df)
+    mp, sp, fp = train_model(df)
     print('Saved model to', mp)
+    print('Saved feature columns to', fp)
